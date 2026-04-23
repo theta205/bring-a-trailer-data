@@ -1,3 +1,6 @@
 *venv
 *.db
 /data/
+.claude
+/models
+__pycache__

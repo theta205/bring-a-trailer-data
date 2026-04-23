@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BaT Car Price Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #f7a34f;
+      --text: #e8eaf6;
+      --muted: #8890b0;
+      --green: #4fca8e;
+      --red: #f76f6f;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      max-width: 1100px;
+      margin: 0 auto 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header span {
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 4px 10px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+    }
+
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    select:focus, input[type="number"]:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="text"]::placeholder { color: var(--muted); }
+
+    select option { background: var(--surface2); }
+
+    .toggle-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+
+    .toggle-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .predict-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 13px;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .predict-btn:hover { opacity: 0.88; }
+    .predict-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .price-result {
+      margin-top: 20px;
+      padding: 20px;
+      background: var(--surface2);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      text-align: center;
+      display: none;
+    }
+
+    .price-result .label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .price-result .value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: -1px;
+    }
+
+    .price-result .sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+.right-col { display: flex; flex-direction: column; gap: 24px; }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 220px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-box .s-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .stat-box .s-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    .model-select-prompt {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+
+
+    @media (max-width: 820px) {
+      .layout { grid-template-columns: 1fr; }
+      .chart-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>BaT Car Price Predictor</h1>
+  <span>XGBoost · 38k auctions</span>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: Form -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+    <div class="card">
+      <h2>Predict a Car</h2>
+
+      <div class="form-group">
+        <label>Make / Model</label>
+        <input type="text" id="car-model" list="car-model-list" placeholder="Type to search…" autocomplete="off" />
+        <datalist id="car-model-list"></datalist>
+      </div>
+
+      <div class="form-group">
+        <label>Year</label>
+        <input type="number" id="year" value="2005" min="1900" max="2026" />
+      </div>
+
+      <div class="form-group">
+        <label>Mileage</label>
+        <input type="number" id="mileage" value="45000" min="0" />
+      </div>
+
+      <div class="form-group">
+        <label>Transmission</label>
+        <div class="toggle-row">
+          <button class="toggle-btn active" id="btn-manual" onclick="setTransmission(1)">Manual</button>
+          <button class="toggle-btn" id="btn-auto" onclick="setTransmission(0)">Automatic</button>
+        </div>
+      </div>
+
+      <button class="predict-btn" id="predict-btn" onclick="predict()">Predict Price</button>
+
+      <div class="price-result" id="price-result">
+        <div class="label">Estimated Auction Value</div>
+        <div class="value" id="price-value">—</div>
+        <div class="sub" id="price-sub"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Charts -->
+  <div class="right-col">
+
+    <!-- Model stats -->
+    <div class="card" id="model-stats-card">
+      <h2 id="stats-title">Select a model to see stats</h2>
+      <div id="stats-body">
+        <div class="model-select-prompt">Choose a make/model from the form to explore its auction history.</div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<script>
+let isManual = 1;
+let scatterPts = [];
+let histChart = null;
+let lastPrediction = null; // { model, price, date, car_year, mileage, transmission }
+
+// ── Startup ──────────────────────────────────────────────────────────────────
+let allModels = [];
+
+async function init() {
+  const res = await fetch('/api/models');
+  allModels = await res.json();
+  const list = document.getElementById('car-model-list');
+  list.innerHTML = allModels.map(m => `<option value="${m}">`).join('');
+  const input = document.getElementById('car-model');
+  input.addEventListener('change', () => {
+    if (allModels.includes(input.value)) loadModelStats(input.value);
+  });
+  input.addEventListener('input', () => {
+    if (allModels.includes(input.value)) loadModelStats(input.value);
+  });
+}
+
+function setTransmission(val) {
+  isManual = val;
+  document.getElementById('btn-manual').classList.toggle('active', val === 1);
+  document.getElementById('btn-auto').classList.toggle('active', val === 0);
+}
+
+// ── Prediction ────────────────────────────────────────────────────────────────
+async function predict() {
+  const btn = document.getElementById('predict-btn');
+  btn.disabled = true;
+  btn.textContent = 'Predicting…';
+
+  const payload = {
+    model: document.getElementById('car-model').value.trim(),
+    year: document.getElementById('year').value,
+    mileage: document.getElementById('mileage').value,
+    is_manual: isManual,
+    auction_year: new Date().getFullYear(),
+  };
+
+  const res = await fetch('/api/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+
+  const fmt = v => '$' + Math.round(v).toLocaleString();
+  document.getElementById('price-value').textContent = fmt(data.price);
+  document.getElementById('price-sub').textContent =
+    `${payload.model} · ${payload.year} · ${Number(payload.mileage).toLocaleString()} mi · ${isManual ? 'Manual' : 'Auto'}`;
+  document.getElementById('price-result').style.display = 'block';
+
+  // Store prediction and plot green dot
+  const now = new Date();
+  lastPrediction = {
+    model: payload.model,
+    price: data.price,
+    date: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'),
+    car_year: Number(payload.year),
+    mileage: Number(payload.mileage),
+    transmission: isManual ? 'Manual' : 'Automatic',
+  };
+  applyPredictionDot();
+
+  btn.disabled = false;
+  btn.textContent = 'Predict Price';
+}
+
+
+// ── Model stats ───────────────────────────────────────────────────────────────
+async function loadModelStats(carModel) {
+  if (!carModel) return;
+  const res = await fetch(`/api/model-stats/${encodeURIComponent(carModel)}`);
+  const d = await res.json();
+  if (d.error) return;
+
+  document.getElementById('stats-title').textContent = carModel + ' — Auction History';
+  if (d.min_year) document.getElementById('year').value = d.min_year;
+
+  const fmt = v => '$' + Math.round(v).toLocaleString();
+
+  document.getElementById('stats-body').innerHTML = `
+    <div class="stats-row">
+      <div class="stat-box"><div class="s-label">Sales</div><div class="s-value">${d.count}</div></div>
+      <div class="stat-box"><div class="s-label">Median</div><div class="s-value">${fmt(d.median)}</div></div>
+      <div class="stat-box"><div class="s-label">Mean</div><div class="s-value">${fmt(d.mean)}</div></div>
+      <div class="stat-box"><div class="s-label">Max</div><div class="s-value">${fmt(d.max)}</div></div>
+    </div>
+    <div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Price vs Auction Date</div>
+      <div class="chart-wrap" style="height:240px;"><canvas id="scatter-chart"></canvas></div>
+    </div>
+  `;
+
+  // Price vs Auction Date scatter
+  if (histChart) { histChart.destroy(); histChart = null; }
+
+  const pts = d.auction_scatter;
+  scatterPts = pts;
+  // Unique sorted date labels for x-axis
+  const allDates = [...new Set(pts.map(p => p.date))].sort();
+
+  histChart = new Chart(document.getElementById('scatter-chart'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: pts.map(p => ({ x: p.date, y: p.price, car_year: p.car_year, mileage: p.mileage, transmission: p.transmission, url: p.url })),
+        backgroundColor: pts.map(p => p.url ? '#4f8ef799' : '#8890b055'),
+        borderColor: pts.map(p => p.url ? '#4f8ef7' : '#8890b0'),
+        borderWidth: 1,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointStyle: pts.map(p => p.url ? 'circle' : 'crossRot'),
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => ctx[0].raw.x,
+            label: ctx => {
+              const r = ctx.raw;
+              if (r.isPrediction) {
+                const lines = [`Predicted: $${Math.round(r.y).toLocaleString()}`];
+                if (r.car_year) lines.push(`${r.car_year} model year`);
+                if (r.mileage != null) lines.push(`${Number(r.mileage).toLocaleString()} mi`);
+                if (r.transmission) lines.push(r.transmission);
+                return lines;
+              }
+              const lines = [`$${Math.round(r.y).toLocaleString()}`];
+              if (r.car_year) lines.push(`${r.car_year} model year`);
+              if (r.mileage != null) lines.push(`${r.mileage.toLocaleString()} mi`);
+              if (r.transmission) lines.push(r.transmission);
+              if (r.url) lines.push('Click to open auction →');
+              return lines;
+            }
+          }
+        }
+      },
+      onHover: (e, elements) => {
+        if (!elements.length) { e.native.target.style.cursor = 'default'; return; }
+        if (elements[0].datasetIndex !== 0) { e.native.target.style.cursor = 'default'; return; }
+        const pt = scatterPts[elements[0].index];
+        e.native.target.style.cursor = pt && pt.url ? 'pointer' : 'default';
+      },
+      onClick: (e, elements) => {
+        if (!elements.length) return;
+        if (elements[0].datasetIndex !== 0) return;
+        const pt = scatterPts[elements[0].index];
+        if (pt && pt.url) window.open(pt.url, '_blank');
+      },
+      scales: {
+        x: {
+          type: 'category',
+          labels: allDates,
+          ticks: {
+            color: '#8890b0',
+            maxTicksLimit: 10,
+            maxRotation: 35,
+            font: { size: 9 },
+          },
+          grid: { color: '#2e3250' },
+        },
+        y: {
+          ticks: {
+            color: '#8890b0',
+            callback: v => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+          },
+          grid: { color: '#2e3250' },
+        }
+      }
+    }
+  });
+
+  applyPredictionDot();
+}
+
+
+// ── Prediction dot ────────────────────────────────────────────────────────────
+function applyPredictionDot() {
+  if (!histChart || !lastPrediction) return;
+  const currentModel = document.getElementById('car-model').value.trim();
+  if (lastPrediction.model !== currentModel) return;
+
+  // Ensure the prediction date appears in the x-axis labels
+  const labels = histChart.options.scales.x.labels;
+  if (!labels.includes(lastPrediction.date)) {
+    labels.push(lastPrediction.date);
+    labels.sort();
+  }
+
+  const predDataset = {
+    label: 'Prediction',
+    data: [{
+      x: lastPrediction.date,
+      y: lastPrediction.price,
+      isPrediction: true,
+      car_year: lastPrediction.car_year,
+      mileage: lastPrediction.mileage,
+      transmission: lastPrediction.transmission,
+    }],
+    backgroundColor: '#4fca8ecc',
+    borderColor: '#4fca8e',
+    borderWidth: 2,
+    pointRadius: 9,
+    pointHoverRadius: 11,
+    pointStyle: 'star',
+  };
+
+  if (histChart.data.datasets.length > 1) {
+    histChart.data.datasets[1] = predDataset;
+  } else {
+    histChart.data.datasets.push(predDataset);
+  }
+  histChart.update();
+}
+
+
+init();
+</script>
+</body>
+</html>
