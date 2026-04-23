@@ -41,6 +41,10 @@ Model selection by sample count per car model:
 | 5–29 | Ridge regression (StandardScaler pipeline) |
 | < 5 | Historical mean/median only |
 
+## Data
+
+The raw data (`listings.db` and `total.json`) is not included in this repo. If you'd like access, reach out and I can share it.
+
 ## Running
 
 **Build the dataset:**
